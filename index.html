@@ -294,6 +294,22 @@
     <a href="https://discord.gg/x4ZcJQYYdf" target="_blank" id="toastLink">discord.gg/x4ZcJQYYdf</a>
   </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAzs0pewKrkzST7z7wH0KVi2qDSgJxQNNU",
+  authDomain: "donut-assets-keys.firebaseapp.com",
+  databaseURL: "https://donut-assets-keys-default-rtdb.firebaseio.com",
+  projectId: "donut-assets-keys",
+  storageBucket: "donut-assets-keys.firebasestorage.app",
+  messagingSenderId: "399377782021",
+  appId: "1:399377782021:web:8771f97fd1b8269a35936c"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+</script>
+
 <script>
 const DISCORD_LINK = "https://discord.gg/x4ZcJQYYdf";
 const VALID_KEYS = {
@@ -302,61 +318,51 @@ const VALID_KEYS = {
   "SAB123-SRPT": 1000
 };
 const SINGLE_USE_PER_USER = ["SU-26-25"];
-const REDEEMED_KEY = "dmpl_redeemed_by_user";
-const STORAGE_KEY = "dmpl_key_usage";
+const DEVICE_ID_STORAGE = "dmpl_device_id";
 
-function getUsage(){
-  try{
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-  }catch(e){
-    return {};
+function getDeviceId(){
+  let id = localStorage.getItem(DEVICE_ID_STORAGE);
+  if(!id){
+    id = 'd-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem(DEVICE_ID_STORAGE, id);
   }
+  return id;
 }
 
-function saveUsage(usage){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
-}
-
-function getRedeemedByUser(){
-  try{
-    return JSON.parse(localStorage.getItem(REDEEMED_KEY)) || [];
-  }catch(e){
-    return [];
-  }
-}
-
-function markRedeemedByUser(key){
-  const redeemed = getRedeemedByUser();
-  if(!redeemed.includes(key)){
-    redeemed.push(key);
-    localStorage.setItem(REDEEMED_KEY, JSON.stringify(redeemed));
-  }
-}
-
-function checkKey(rawKey){
+async function checkKey(rawKey){
   const key = Object.keys(VALID_KEYS).find(
     k => k.toLowerCase() === rawKey.toLowerCase()
   );
   if(!key) return { ok:false, reason:"invalid" };
 
-  if(SINGLE_USE_PER_USER.includes(key) && getRedeemedByUser().includes(key)){
-    return { ok:false, reason:"already_used" };
-  }
-
-  const usage = getUsage();
-  const used = usage[key] || 0;
+  const deviceId = getDeviceId();
   const limit = VALID_KEYS[key];
 
-  if(used >= limit) return { ok:false, reason:"limit" };
-
-  usage[key] = used + 1;
-  saveUsage(usage);
-
   if(SINGLE_USE_PER_USER.includes(key)){
-    markRedeemedByUser(key);
+    const redeemedSnap = await db.ref(`redeemed/${key}/${deviceId}`).once('value');
+    if(redeemedSnap.exists()){
+      return { ok:false, reason:"already_used" };
+    }
   }
 
-  return { ok:true, key, remaining: limit - usage[key] };
+  const usageRef = db.ref(`usage/${key}`);
+  const result = await usageRef.transaction(current => {
+    current = current || 0;
+    if(current >= limit) return; // abort, over limit
+    return current + 1;
+  });
+
+  if(!result.committed){
+    return { ok:false, reason:"limit" };
+  }
+
+  if(SINGLE_USE_PER_USER.includes(key)){
+    await db.ref(`redeemed/${key}/${deviceId}`).set(true);
+  }
+
+  const used = result.snapshot.val();
+  const remaining = limit === Infinity ? Infinity : limit - used;
+  return { ok:true, key, remaining };
 }
 
 function addLine(text, cls){
@@ -383,7 +389,7 @@ function hideToast(){
   clearTimeout(toastTimer);
 }
 
-function runDeploy(){
+async function runDeploy(){
   const btn = document.getElementById('deployBtn');
   const label = document.getElementById('btnLabel');
   const key = document.getElementById('key').value.trim();
@@ -398,10 +404,24 @@ function runDeploy(){
     return;
   }
 
-  const result = checkKey(key);
+  btn.disabled = true;
+  btn.classList.add('working');
+  label.textContent = 'Checking';
+  log.classList.add('show');
+  addLine(`Validating key ${key}`);
+
+  let result;
+  try{
+    result = await checkKey(key);
+  }catch(e){
+    addLine('Something went wrong reaching the server — try again.');
+    btn.disabled = false;
+    btn.classList.remove('working');
+    label.textContent = 'Unlock';
+    return;
+  }
 
   if(!result.ok){
-    log.classList.add('show');
     if(result.reason === "limit"){
       addLine(`Key "${key}" has hit its redemption limit.`);
     } else if(result.reason === "already_used"){
@@ -409,23 +429,19 @@ function runDeploy(){
     } else {
       addLine(`Key "${key}" is not valid.`);
     }
+    btn.disabled = false;
+    btn.classList.remove('working');
+    label.textContent = 'Unlock';
     return;
   }
 
-  btn.disabled = true;
-  btn.classList.add('working');
-  label.textContent = 'Checking';
-  addLine(`Validating key ${key}`);
-
-  setTimeout(() => {
-    const remainingText = result.remaining === Infinity ? "unlimited" : result.remaining;
-    addLine(`Key accepted — ${remainingText} redemptions left`);
-    label.textContent = 'Unlocked';
-    addLine('Showing Discord invite…');
-    btn.classList.remove('working');
-    btn.disabled = false;
-    showToast();
-  }, 1400);
+  const remainingText = result.remaining === Infinity ? "unlimited" : result.remaining;
+  addLine(`Key accepted — ${remainingText} redemptions left`);
+  label.textContent = 'Unlocked';
+  addLine('Showing Discord invite…');
+  btn.classList.remove('working');
+  btn.disabled = false;
+  showToast();
 }
 </script>
 
