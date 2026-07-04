@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DMPL — Donut Better Assets key system</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0c0e;
+    --panel:#131417;
+    --hairline:#24262b;
+    --ink:#f2f1ed;
+    --ink-dim:#8b8e94;
+    --accent:#3ecf7e;
+    --accent-dim:#1f5c3c;
+    --danger:#e5484d;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, #16181c 0%, var(--bg) 60%);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:64px 20px 40px;
+  }
+
+  .brand{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    margin-bottom:40px;
+    text-align:center;
+  }
+  .brand-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .logo-mark{
+    width:40px;height:40px;
+    border-radius:10px;
+    background:linear-gradient(155deg,#1c1f23,#0d0e10);
+    border:1px solid var(--hairline);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .logo-mark::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(120deg,transparent 40%, rgba(62,207,126,0.25) 50%, transparent 60%);
+    animation:sheen 5s ease-in-out infinite;
+  }
+  .logo-mark svg{position:relative;z-index:1;}
+  @keyframes sheen{
+    0%,100%{transform:translateX(-120%);}
+    50%{transform:translateX(120%);}
+  }
+  h1.title{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:44px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    margin:0;
+  }
+  .tagline{
+    margin-top:8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+  }
+
+  .panel{
+    width:100%;
+    max-width:420px;
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-radius:16px;
+    padding:28px;
+    box-shadow:0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+
+  .field{
+    margin-bottom:18px;
+  }
+  .field label{
+    display:block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin-bottom:8px;
+  }
+  .field input,
+  .field textarea{
+    width:100%;
+    background:#0e0f12;
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    color:var(--ink);
+    padding:12px 14px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease;
+    resize:vertical;
+  }
+  .field textarea{min-height:90px; line-height:1.5;}
+  .field input::placeholder,
+  .field textarea::placeholder{color:#54575e;}
+  .field input:focus,
+  .field textarea:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(62,207,126,0.15);
+  }
+
+  .deploy-btn{
+    width:100%;
+    margin-top:6px;
+    padding:14px;
+    border:none;
+    border-radius:999px;
+    background:var(--accent);
+    color:#062012;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:0.3px;
+    cursor:pointer;
+    transition:transform .12s ease, background .2s ease, box-shadow .2s ease;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+  }
+  .deploy-btn:hover{
+    box-shadow:0 8px 24px -6px rgba(62,207,126,0.5);
+  }
+  .deploy-btn:active{
+    transform:scale(0.98);
+  }
+  .deploy-btn:disabled{
+    cursor:default;
+    opacity:0.9;
+  }
+  .deploy-btn .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:#062012;
+    opacity:0;
+  }
+  .deploy-btn.working .dot{
+    opacity:1;
+    animation:pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:0.3; transform:scale(0.8);}
+    50%{opacity:1; transform:scale(1.1);}
+  }
+
+  .log{
+    margin-top:18px;
+    background:#0e0f12;
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    padding:12px 14px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--ink-dim);
+    min-height:20px;
+    display:none;
+  }
+  .log.show{display:block;}
+  .log-line{
+    display:flex;
+    gap:8px;
+    padding:3px 0;
+    opacity:0;
+    animation:fadeIn .3s ease forwards;
+  }
+  .log-line .tag{color:var(--accent); flex-shrink:0;}
+  @keyframes fadeIn{
+    from{opacity:0; transform:translateY(2px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .footnote{
+    margin-top:28px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:#54575e;
+    text-align:center;
+    max-width:420px;
+    line-height:1.6;
+  }
+
+  .toast{
+    position:fixed;
+    bottom:32px;
+    right:32px;
+    max-width:480px;
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-left:5px solid var(--accent);
+    border-radius:16px;
+    padding:28px 32px;
+    box-shadow:0 25px 60px -15px rgba(0,0,0,0.75);
+    transform:translateY(20px);
+    opacity:0;
+    pointer-events:none;
+    transition:transform .25s ease, opacity .25s ease;
+    z-index:100;
+  }
+  .toast.show{
+    transform:translateY(0);
+    opacity:1;
+    pointer-events:auto;
+  }
+  .toast-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:22px;
+    margin-bottom:14px;
+    color:var(--ink);
+  }
+  .toast a{
+    color:var(--accent);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:17px;
+    word-break:break-all;
+    text-decoration:none;
+  }
+  .toast a:hover{
+    text-decoration:underline;
+  }
+  .toast-close{
+    position:absolute;
+    top:16px;
+    right:18px;
+    background:none;
+    border:none;
+    color:var(--ink-dim);
+    font-size:20px;
+    cursor:pointer;
+    line-height:1;
+  }
+</style>
+</head>
+<body>
+
+  <div class="brand">
+    <div class="brand-row">
+      <div class="logo-mark">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M4 3L16 10L4 17V3Z" fill="#3ecf7e"/>
+        </svg>
+      </div>
+      <h1 class="title">DMPL</h1>
+    </div>
+    <div class="tagline">Donut Assets key system</div>
+  </div>
+
+  <div class="panel">
+    <div class="field">
+      <label for="key">Key</label>
+      <input id="key" type="text" placeholder="Enter your key" />
+    </div>
+
+    <button class="deploy-btn" id="deployBtn" onclick="runDeploy()">
+      <span class="dot"></span>
+      <span id="btnLabel">Unlock</span>
+    </button>
+
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="footnote">
+    Enter your key to unlock the Donut Better Assets Discord invite.
+  </div>
+
+  <div class="toast" id="toast">
+    <button class="toast-close" onclick="hideToast()">✕</button>
+    <div class="toast-title">Key accepted</div>
+    <a href="https://discord.gg/x4ZcJQYYdf" target="_blank" id="toastLink">discord.gg/x4ZcJQYYdf</a>
+  </div>
+
+<script>
+const DISCORD_LINK = "https://discord.gg/x4ZcJQYYdf";
+const VALID_KEYS = {
+  "DMPL-Brainrot-26": 250,
+  "SU-26-25": 7,
+  "SAB123-SRPT": 1000
+};
+const SINGLE_USE_PER_USER = ["SU-26-25"];
+const REDEEMED_KEY = "dmpl_redeemed_by_user";
+const STORAGE_KEY = "dmpl_key_usage";
+
+function getUsage(){
+  try{
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  }catch(e){
+    return {};
+  }
+}
+
+function saveUsage(usage){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
+}
+
+function getRedeemedByUser(){
+  try{
+    return JSON.parse(localStorage.getItem(REDEEMED_KEY)) || [];
+  }catch(e){
+    return [];
+  }
+}
+
+function markRedeemedByUser(key){
+  const redeemed = getRedeemedByUser();
+  if(!redeemed.includes(key)){
+    redeemed.push(key);
+    localStorage.setItem(REDEEMED_KEY, JSON.stringify(redeemed));
+  }
+}
+
+function checkKey(rawKey){
+  const key = Object.keys(VALID_KEYS).find(
+    k => k.toLowerCase() === rawKey.toLowerCase()
+  );
+  if(!key) return { ok:false, reason:"invalid" };
+
+  if(SINGLE_USE_PER_USER.includes(key) && getRedeemedByUser().includes(key)){
+    return { ok:false, reason:"already_used" };
+  }
+
+  const usage = getUsage();
+  const used = usage[key] || 0;
+  const limit = VALID_KEYS[key];
+
+  if(used >= limit) return { ok:false, reason:"limit" };
+
+  usage[key] = used + 1;
+  saveUsage(usage);
+
+  if(SINGLE_USE_PER_USER.includes(key)){
+    markRedeemedByUser(key);
+  }
+
+  return { ok:true, key, remaining: limit - usage[key] };
+}
+
+function addLine(text, cls){
+  const log = document.getElementById('log');
+  log.classList.add('show');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="tag">›</span><span>${text}</span>`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+let toastTimer = null;
+
+function showToast(){
+  const toast = document.getElementById('toast');
+  clearTimeout(toastTimer);
+  toast.classList.add('show');
+  toastTimer = setTimeout(hideToast, 60000);
+}
+
+function hideToast(){
+  document.getElementById('toast').classList.remove('show');
+  clearTimeout(toastTimer);
+}
+
+function runDeploy(){
+  const btn = document.getElementById('deployBtn');
+  const label = document.getElementById('btnLabel');
+  const key = document.getElementById('key').value.trim();
+  const log = document.getElementById('log');
+
+  log.innerHTML = '';
+  log.classList.remove('show');
+
+  if(!key){
+    log.classList.add('show');
+    addLine('Enter a key first.');
+    return;
+  }
+
+  const result = checkKey(key);
+
+  if(!result.ok){
+    log.classList.add('show');
+    if(result.reason === "limit"){
+      addLine(`Key "${key}" has hit its redemption limit.`);
+    } else if(result.reason === "already_used"){
+      addLine(`Key "${key}" can only be redeemed once, and you've already used it.`);
+    } else {
+      addLine(`Key "${key}" is not valid.`);
+    }
+    return;
+  }
+
+  btn.disabled = true;
+  btn.classList.add('working');
+  label.textContent = 'Checking';
+  addLine(`Validating key ${key}`);
+
+  setTimeout(() => {
+    const remainingText = result.remaining === Infinity ? "unlimited" : result.remaining;
+    addLine(`Key accepted — ${remainingText} redemptions left`);
+    label.textContent = 'Unlocked';
+    addLine('Showing Discord invite…');
+    btn.classList.remove('working');
+    btn.disabled = false;
+    showToast();
+  }, 1400);
+}
+</script>
+
+</body>
+</html>
